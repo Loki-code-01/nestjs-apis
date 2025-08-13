@@ -1,21 +1,29 @@
 version: '3.8'
+
 services:
-  db:
+  postgres:
     image: postgres:15
-    container_name: postgres-db
+    container_name: postgres
+    restart: always
     environment:
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypass
-      POSTGRES_DB: mydb
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: sample
     ports:
       - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
-  nest-app:
+  app:
     build: .
-    container_name: nest-container
-    environment:
-      DATABASE_URL: postgres://myuser:mypass@db:5432/mydb
+    container_name: my-app
+    restart: always
     depends_on:
-      - db
+      - postgres
+    environment:
+      DATABASE_URL: postgres://dev:1234@postgres:5432/sample?schema=public
     ports:
       - '3000:3000'
+
+volumes:
+  postgres_data:

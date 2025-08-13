@@ -24,6 +24,7 @@ export class UserService {
     return this.prisma.user.create({
       data: {
         ...createUserDto,
+        age: Number(createUserDto.age),
         user_id,
         posts: {},
       },
