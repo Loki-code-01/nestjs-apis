@@ -7,7 +7,7 @@ pipeline {
         PORT = "3000"
         ENV_FILE = ".env"
         EC2_USER = "ubuntu"                // Change if different
-        EC2_IP = "YOUR.EC2.PUBLIC.IP"      // Replace with your EC2 public IP
+        EC2_IP = "13.60.216.114"      // Replace with your EC2 public IP
         SSH_CREDENTIALS_ID = "ec2-ssh"     // The Jenkins credential ID for your EC2 private key
         APP_DIR = "/home/ubuntu/nestjs-apis" // Path in EC2 where code will be stored
     }
