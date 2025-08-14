@@ -21,7 +21,7 @@ export class UserService {
       }
     }
     const user_id = `user-${String(nextIdNumber).padStart(2, '0')}`;
-    return this.prisma.user.create({
+    const user = this.prisma.user.create({
       data: {
         ...createUserDto,
         age: Number(createUserDto.age),
@@ -29,6 +29,8 @@ export class UserService {
         posts: {},
       },
     });
+
+    return { user, success: 'add data' };
   }
 
   async addRoles(role: { name: string }[]) {
