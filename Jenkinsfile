@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "my-app"
-        CONTAINER_NAME = "my-app"
+        IMAGE_NAME = "postgres:15"
+        CONTAINER_NAME = "postgres"
         PORT = "3000"
         ENV_FILE = ".env"
-        EC2_USER = "ubuntu"                // Change if different
-        EC2_IP = "13.60.216.114"      // Replace with your EC2 public IP
-        SSH_CREDENTIALS_ID = "ec2-ssh"     // The Jenkins credential ID for your EC2 private key
-        APP_DIR = "/home/ubuntu/nestjs-apis" // Path in EC2 where code will be stored
+        EC2_USER = "ubuntu"
+        EC2_IP = "54.226.129.25"
+        SSH_CREDENTIALS_ID = "ec2-ssh-key"
+        APP_DIR = "/home/ubuntu/nestjs-apis"
     }
 
     stages {
@@ -19,14 +19,23 @@ pipeline {
                     sh '''
                         ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_IP << 'ENDSSH'
                         set -e
+                        
+                        # Clone repo if not exists
                         if [ ! -d "$APP_DIR" ]; then
                             git clone https://github.com/Loki-code-01/nestjs-apis.git $APP_DIR
                         fi
+                        
                         cd $APP_DIR
                         git pull origin main
+                        
+                        # Build new image
                         docker build -t $IMAGE_NAME .
+                        
+                        # Stop and remove old container if exists
                         docker rm -f $CONTAINER_NAME || true
-                        docker run -d --name $CONTAINER_NAME --env-file $ENV_FILE -p $PORT:$PORT $IMAGE_NAME
+                        
+                        # Run new container
+                        docker run -d --name $CONTAINER_NAME --env-file $ENV_FILE -p 80:$PORT $IMAGE_NAME
                         ENDSSH
                     '''
                 }
@@ -36,7 +45,7 @@ pipeline {
 
     post {
         success {
-            echo "✅ Deployment successful on EC2! App is running on port $PORT"
+            echo "✅ Deployment successful! Visit: http://${EC2_IP}"
         }
         failure {
             echo "❌ Deployment failed. Check Jenkins logs."
