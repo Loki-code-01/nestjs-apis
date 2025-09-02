@@ -9,28 +9,39 @@ export class UserService {
 
   //create one
   async create(createUserDto: CreateUserDto) {
-    const lastUser = await this.prisma.user.findFirst({
-      orderBy: { id: 'desc' },
-    });
-    let nextIdNumber = 1;
+    try {
+      const isUserExist = await this.prisma.user.findUnique({
+        where: { email: createUserDto.email },
+      });
 
-    if (lastUser?.user_id) {
-      const lastIdNumber = parseInt(lastUser.user_id.split('-')[1], 10);
-      if (!isNaN(lastIdNumber)) {
-        nextIdNumber = lastIdNumber + 1;
+      if (isUserExist) {
+        throw new Error('User already exist');
       }
-    }
-    const user_id = `user-${String(nextIdNumber).padStart(2, '0')}`;
-    const user = this.prisma.user.create({
-      data: {
-        ...createUserDto,
-        age: Number(createUserDto.age),
-        user_id,
-        posts: {},
-      },
-    });
+      const lastUser = await this.prisma.user.findFirst({
+        orderBy: { id: 'desc' },
+      });
+      let nextIdNumber = 1;
 
-    return { user, success: 'add data' };
+      if (lastUser?.user_id) {
+        const lastIdNumber = parseInt(lastUser.user_id.split('-')[1], 10);
+        if (!isNaN(lastIdNumber)) {
+          nextIdNumber = lastIdNumber + 1;
+        }
+      }
+      const user_id = `user-${String(nextIdNumber).padStart(2, '0')}`;
+      const user = this.prisma.user.create({
+        data: {
+          ...createUserDto,
+          age: Number(createUserDto.age),
+          user_id,
+          posts: {},
+        },
+      });
+
+      return { user, success: 'add data' };
+    } catch (err) {
+      throw new Error('Failed while creating user', err);
+    }
   }
 
   async addRoles(role: { name: string }[]) {
@@ -138,70 +149,92 @@ export class UserService {
 
   //find all
   async findAll() {
-    const users = await this.prisma.user.findMany();
-    return { success: 'get data', users };
+    try {
+      const users = await this.prisma.user.findMany();
+      return { success: 'get data', users };
+    } catch (err) {
+      throw new Error('Failed while getting users', err);
+    }
   }
 
   //find one
-  async findOne(email) {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-    });
-
-    return user;
+  async findOne(email: string) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+      if (!user) {
+        throw new Error(`User with email ${email} not found`);
+      }
+      return user;
+    } catch (err) {
+      throw new Error('Failed while getting user', err);
+    }
   }
 
   //update
   async update(email: string, updateUserDto: UpdateUserDto) {
-    const { age, name } = updateUserDto;
-    return await this.prisma.user.update({
-      where: { email },
-      data: { age, name },
-    });
+    try {
+      const { age, name } = updateUserDto;
+      return await this.prisma.user.update({
+        where: { email },
+        data: { age, name },
+      });
+    } catch (err) {
+      throw new Error('Failed while updating user', err);
+    }
   }
 
   // delete
   async remove(email: string) {
-    const user = await this.prisma.user.findFirst({
-      where: { email },
-      select: { id: true },
-    });
+    try {
+      const user = await this.prisma.user.findFirst({
+        where: { email },
+        select: { id: true },
+      });
 
-    if (!user) {
-      throw new Error(`User with email ${email} not found`);
-    }
+      if (!user) {
+        throw new Error(`User with email ${email} not found`);
+      }
 
-    const userId = user.id;
+      const userId = user.id;
 
-    await this.prisma.post.deleteMany({
-      where: { authorId: userId },
-    });
+      await this.prisma.post.deleteMany({
+        where: { authorId: userId },
+      });
 
-    await this.prisma.profile.deleteMany({
-      where: { userId },
-    });
+      await this.prisma.profile.deleteMany({
+        where: { userId },
+      });
 
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        roles: {
-          set: [],
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          roles: {
+            set: [],
+          },
         },
-      },
-    });
+      });
 
-    return await this.prisma.user.delete({
-      where: { id: userId },
-    });
+      return await this.prisma.user.delete({
+        where: { id: userId },
+      });
+    } catch (err) {
+      throw new Error('Failed while deleting user', err);
+    }
   }
 
   async deleteMany(user_ids: string[]) {
-    return await this.prisma.user.deleteMany({
-      where: {
-        user_id: {
-          in: user_ids,
+    try {
+      return await this.prisma.user.deleteMany({
+        where: {
+          user_id: {
+            in: user_ids,
+          },
         },
-      },
-    });
+      });
+    } catch (err) {
+      throw new Error('Failed while deleting user', err);
+    }
   }
 }
